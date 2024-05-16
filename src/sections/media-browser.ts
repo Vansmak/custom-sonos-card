@@ -53,6 +53,9 @@ export class MediaBrowser extends LitElement {
           }
         }),
       )}
+
+      <!-- Add the new button here -->
+      <button @click="${this.showQueue}">Show Queue</button>
     `;
   }
 
@@ -100,11 +103,50 @@ export class MediaBrowser extends LitElement {
     return { ...source, can_play: true };
   }
 
+  private showQueue() {
+    const mediaPlayer = this.hass.states['media_player.office'];
+    const queue = this.hass.states['sensor.sonos_queue_nr'];
+    const currentIndex = mediaPlayer.attributes.queue_position;
+    const queueList = queue.attributes.queue;
+
+    let content = 'No more tracks in the queue.';
+    if (queueList && currentIndex !== undefined) {
+      const tracks = queueList.slice(currentIndex, currentIndex + 6);
+      content = tracks.map(track => `**${track.title}** by ${track.artist}`).join('<br>');
+    }
+
+    this.showPopup(content);
+  }
+
+  private showPopup(content: string) {
+    const popup = document.createElement('div');
+    popup.className = 'popup';
+    popup.innerHTML = `<div class="popup-content">${content}</div>`;
+    document.body.appendChild(popup);
+
+    popup.addEventListener('click', () => {
+      document.body.removeChild(popup);
+    });
+  }
+
   static get styles() {
     return css`
       .no-items {
         text-align: center;
         margin-top: 50%;
+      }
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #ccc;
+        padding: 16px;
+        z-index: 1000;
+      }
+      .popup-content {
+        white-space: pre-wrap;
       }
     `;
   }
